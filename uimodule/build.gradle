@@ -1,0 +1,111 @@
+plugins {
+    id 'com.android.application'
+}
+def configProperties = new Properties()
+configProperties.load(new FileInputStream(rootProject.file("config.properties")))
+
+android {
+    signingConfigs {
+        mobileapp {
+            storeFile file('/home/innobot-linux-4/AWrkspc/Android/RoomDb/uimodule/uimodule_keystore.jks')
+            storePassword uimodule_storepassword
+            keyAlias key_alias
+            keyPassword key_password
+        }
+    }
+
+    buildFeatures {
+        buildConfig = true
+    }
+    compileSdkVersion 30
+    buildToolsVersion "30.0.2"
+
+    defaultConfig {
+        applicationId "com.mohan.uimodule"
+        minSdkVersion 24
+        targetSdkVersion 30
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            debuggable = true
+            minifyEnabled = false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.mobileapp
+            //resValue("String", "APP_URL", BuildConfig.PROD_URL)
+            /*resValue("String", "APP_URL", configProperties.getProperty("PROD_URL"))*/
+            buildConfigField("String", "base_url", configProperties['PROD_URL'])
+        }
+
+        rc {
+            debuggable = true
+            minifyEnabled = false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.mobileapp
+            def appUrl = configProperties['RC_URL']
+println(appUrl)
+
+            buildConfigField("String", "APP_URL", "\"$appUrl\"")
+            //resValue("String", "APP_URL", configProperties.getProperty('RC_URL'))
+            //buildConfigField("String", "base_url", "\"$configProperties['RC_URL']\"")
+            //resValue("String", "APP_URL", BuildConfig.RC_URL)
+        }
+
+        dev {
+            debuggable = true
+            minifyEnabled = false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.mobileapp
+            buildConfigField("String", "base_url", configProperties['DEV_URL'])
+            //resValue("String", "APP_URL", BuildConfig.DEV_URL)
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+}
+
+
+
+dependencies {
+
+    implementation 'androidx.appcompat:appcompat:1.2.0'
+    implementation 'com.google.android.material:material:1.2.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
+    testImplementation 'junit:junit:4.+'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+}
+
+
+
+def propFile = new File('config.properties')
+Properties props = new Properties()
+// Check if the file exists
+if (propFile.canRead()) {
+    //Load the file
+    props.load(new FileInputStream(propFile))
+    // If we found the file lets read in all the keys and values and add those to the buildConfig section of our template.
+    if (props != null) {
+        android.buildTypes.all {
+            buildType ->
+                props.any {
+                    property ->
+                        buildType.buildConfigField "String", property.key, "\"${property.value}\""
+                }
+        }
+    } else {
+        throw new InvalidUserDataException('config.properties found but some entries are missing')
+    }
+} else {
+    // The properties file was not found
+    throw new MissingResourceException('config.properties not found')
+}
+
+
+
